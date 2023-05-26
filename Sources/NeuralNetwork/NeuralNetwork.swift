@@ -1,6 +1,6 @@
 import Foundation
 
-public struct NeuralNetwork {
+public struct NeuralNetwork: Codable {
     private(set) var layers: [[Neuron]] = []
     
     public init?(layerStructure: [Int]) {
@@ -71,6 +71,17 @@ public struct NeuralNetwork {
         return layers[index].map { $0.collector }
     }
     
+    public func serialized() -> String? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        guard let data = try? encoder.encode(self) else {
+            print("An error occured serializing")
+            return nil
+        }
+        let string = String(data: data, encoding: .utf8)
+        return string
+    }
+    
     private func propagateForward() {
         // Start after the input layer
         for layerIndex in 1..<self.layers.count { // Iterate through each layer
@@ -110,7 +121,6 @@ public struct NeuralNetwork {
             } // else
             // Update the delta
             for nodeIndex in 0..<self.layers[layerIndex].count {
-                let oldDelta = self.layers[layerIndex][nodeIndex].delta
                 let delta = layerErrors[nodeIndex] * transferDerivative(self.layers[layerIndex][nodeIndex].collector)
                 self.layers[layerIndex][nodeIndex].updateDelta(newDelta: delta)
             }
