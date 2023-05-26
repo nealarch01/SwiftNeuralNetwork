@@ -46,6 +46,9 @@ final class NeuralNetworkTests: XCTestCase {
             epochs: 5
         )
         print("Training complete")
+        let serializedNetwork = neuralNetwork!.serialized()
+        XCTAssertNotNil(serializedNetwork, "Network should be serialized")
+        print(serializedNetwork ?? "")
     }
 }
 
