@@ -18,70 +18,6 @@ public struct NeuralNetwork: Codable {
         }
     }
     
-    mutating public func train(trainingInputs: [[Double]], expectedOutputs: [[Double]], learningRate: Double, targetError: Double, epochs: Int) {
-        var trainingInputsCpy = trainingInputs
-        var expectedOutputsCpy = expectedOutputs
-        for epoch in 0..<epochs {
-            var sumError = 0.0
-            for i in 0..<trainingInputsCpy.count {
-                setInputLayer(row: &trainingInputsCpy[i])
-                propagateForward()
-                let outputs = self.layers[self.layers.count - 1].map { $0.collector }
-                for j in 0..<outputs.count {
-                    let error = expectedOutputs[i][j] - outputs[j]
-                    sumError += pow(error, 2)
-                }
-                self.propagateBackward(expected: &expectedOutputsCpy[i]) // TODO: Fix this
-                self.adjustWeights(learningRate: learningRate)
-            }
-            if sumError <= targetError {
-                print("Target error reached!")
-                print("> epoch: \(epoch), learning rate: \(learningRate), error: \(sumError)")
-                return
-            }
-            print("> epoch: \(epoch), learning rate: \(learningRate), error: \(sumError)")
-        }
-    }
-    
-    public func testLayerSummation(inputs: [Double]) {
-        let layerSum: (_ index: Int) -> Double = { index in
-            var sum = 0.0
-            for i in 0..<layers[index].count {
-                sum += layers[index][i].collector
-            }
-            return sum
-        }
-        var inputsCpy = inputs
-        self.setInputLayer(row: &inputsCpy)
-        var total = layerSum(0)
-        // Feed forward with the inputs
-        for i in 1..<layers.count {
-            for j in 0..<layers[i].count {
-                layers[i][j].updateCollector(newCollector: total)
-            }
-            total = layerSum(i)
-        }
-    }
-    
-    public func getLayerCollectors(index: Int) -> [Double] {
-        if index >= layers.count {
-            print("Error: Invalid Index")
-            return []
-        }
-        return layers[index].map { $0.collector }
-    }
-    
-    public func serialized() -> String? {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
-        guard let data = try? encoder.encode(self) else {
-            print("An error occured serializing")
-            return nil
-        }
-        let string = String(data: data, encoding: .utf8)
-        return string
-    }
-    
     private func propagateForward() {
         // Start after the input layer
         for layerIndex in 1..<self.layers.count { // Iterate through each layer
@@ -178,4 +114,71 @@ public struct NeuralNetwork: Codable {
         return x * (1.0 - x)
     }
     
+}
+
+// MARK: - Public methods
+extension NeuralNetwork {
+    mutating public func train(trainingInputs: [[Double]], expectedOutputs: [[Double]], learningRate: Double, targetError: Double, epochs: Int) {
+        var trainingInputsCpy = trainingInputs
+        var expectedOutputsCpy = expectedOutputs
+        for epoch in 0..<epochs {
+            var sumError = 0.0
+            for i in 0..<trainingInputsCpy.count {
+                setInputLayer(row: &trainingInputsCpy[i])
+                propagateForward()
+                let outputs = self.layers[self.layers.count - 1].map { $0.collector }
+                for j in 0..<outputs.count {
+                    let error = expectedOutputs[i][j] - outputs[j]
+                    sumError += pow(error, 2)
+                }
+                self.propagateBackward(expected: &expectedOutputsCpy[i]) // TODO: Fix this
+                self.adjustWeights(learningRate: learningRate)
+            }
+            if sumError <= targetError {
+                print("Target error reached!")
+                print("> epoch: \(epoch), learning rate: \(learningRate), error: \(sumError)")
+                return
+            }
+            print("> epoch: \(epoch), learning rate: \(learningRate), error: \(sumError)")
+        }
+    }
+    
+    public func testLayerSummation(inputs: [Double]) {
+        let layerSum: (_ index: Int) -> Double = { index in
+            var sum = 0.0
+            for i in 0..<layers[index].count {
+                sum += layers[index][i].collector
+            }
+            return sum
+        }
+        var inputsCpy = inputs
+        self.setInputLayer(row: &inputsCpy)
+        var total = layerSum(0)
+        // Feed forward with the inputs
+        for i in 1..<layers.count {
+            for j in 0..<layers[i].count {
+                layers[i][j].updateCollector(newCollector: total)
+            }
+            total = layerSum(i)
+        }
+    }
+    
+    public func getLayerCollectors(index: Int) -> [Double] {
+        if index >= layers.count {
+            print("Error: Invalid Index")
+            return []
+        }
+        return layers[index].map { $0.collector }
+    }
+    
+    public func serialized() -> String? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        guard let data = try? encoder.encode(self) else {
+            print("An error occured serializing")
+            return nil
+        }
+        let string = String(data: data, encoding: .utf8)
+        return string
+    }
 }
